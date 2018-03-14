@@ -79,4 +79,50 @@ finderSortArray: (
 */
 ```
 
+## __block变量
 
+block的一个强力特征是其可以修改与其在相同作用域中的变量，使用`__block`存储类型修饰符来指示一个block可以修改变量。改写上面的示例，使用block变量来计算比较的字符串数量，如下所示。为了说明，在这种情况下block被直接使用并block中使用currentLocale作为只读变量：
+```
+NSArray *stringsArray = @[ @"string 1",
+@"String 21", // <-
+@"string 12",
+@"String 11",
+@"Strîng 21", // <-
+@"Striñg 21", // <-
+@"String 02" ];
+
+NSLocale *currentLocale = [NSLocale currentLocale];
+
+__block NSUInteger orderedSameCount = 0;
+
+NSArray *diacriticInsensitiveSortArray = [stringsArray sortedArrayUsingComparator:^(id string1, id string2) {
+
+NSRange string1Range = NSMakeRange(0, [string1 length]);
+
+NSComparisonResult comparisonResult = [string1 compare:string2 options:NSDiacriticInsensitiveSearch range:string1Range locale:currentLocale];
+
+    if (comparisonResult == NSOrderedSame) {
+        orderedSameCount++;
+    }
+    return comparisonResult;
+}];
+
+NSLog(@"diacriticInsensitiveSortArray: %@", diacriticInsensitiveSortArray);
+NSLog(@"orderedSameCount: %d", orderedSameCount);
+
+/*
+Output:
+
+diacriticInsensitiveSortArray: (
+"String 02",
+"string 1",
+"String 11",
+"string 12",
+"String 21",
+"Str\U00eeng 21",
+"Stri\U00f1g 21"
+)
+orderedSameCount: 2
+*/
+```
+更多详细信息，参看[Block和变量];
