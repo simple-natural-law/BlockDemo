@@ -1,5 +1,8 @@
 # Block编程指南 ----  Block入门
 
+## 概述
+
+
 
 ## 声明并使用一个Block
 
@@ -125,6 +128,10 @@ diacriticInsensitiveSortArray: (
 orderedSameCount: 2
 */
 ```
-更多详细信息，参看[Block和变量]();
+更多详细信息，参看[Block和变量](#jump);
+
+<span id="jump">
+## 声明和创建Block
+</span>
 
 
