@@ -1,4 +1,4 @@
-# Block编程指南 ----  入门
+# Block编程指南 ----  Block入门
 
 ## 概述
 
@@ -150,5 +150,49 @@ orderedSameCount: 2
 
 ## 声明和创建Block
 
+### 声明一个block引用
 
+block变量持有对block的引用。使用和用于声明指向函数的指针相似的语法来声明block，除了使用`^`代替`*`之外。block类型与C语言类型系统的其余部分完全互操作。以下是所有有效的block变量声明：
+```
+void (^blockReturningVoidWithVoidArgument)(void);
+int (^blockReturningIntWithIntAndCharArguments)(int, char);
+void (^arrayOfTenBlocksReturningVoidWithIntArgument[10])(int);
+```
+block也支持可变参数`...`，不带参数的block必须在参数列表中指定`void`。
+
+通过为编译器提供一组完整的元数据来用于验证block的使用、传递给block的参数和返回值的分配，block被设计为完全类型安全的。可以将block引用强制转换为任意类型的指针，反之亦然。但是不能通过指针取消引用运算符`*`来取消引用block引用，因此在编译时无法计算block的大小。
+
+也可以为block创建类型，这样做通常被认为是在多个位置使用具有给定签名的block的最佳实践：
+```
+typedef float (^MyBlockType)(float, float);
+
+MyBlockType myFirstBlock = // ... ;
+MyBlockType mySecondBlock = // ... ;
+```
+
+### 创建一个Block
+
+使用`^`运算符来表示block语法表达式的开始。它后面可以跟着包含在`()`中的参数列表，block的主体包含在`{}`中。以下示例定义了一个简单的block并将其分配给之前声明的变量（oneFrom）：
+```
+float (^oneFrom)(float);
+
+oneFrom = ^(float aFloat) {
+    float result = aFloat - 1.0;
+    return result;
+};
+```
+如果没有显式声明表达式的返回值，则可以根据block的内容自动推断它。如果返回类型被自动推断并且参数列表为`void`，则也可以省略`(void)`参数列表。当有多个返回语句时，它们必须完全匹配（如果有需要，使用强制转换）。
+
+### 全局block
+
+在文件级别，可以使用block作为全局字面：
+```
+#import <stdio.h>
+
+int GlobalInt = 0;
+
+int (^getGlobalInt)(void) = ^{ return GlobalInt; };
+```
+
+## Block和变量
 
