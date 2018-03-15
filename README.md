@@ -327,4 +327,97 @@ dispatch_async(queue, ^{
 
 在复制block时，如果需要复制该block内其他block的引用，则可以复制整个树（从顶部开始）。如果有block变量，并且在该block内引用其他block，那么其他block将被复制。
 
+## 使用Block
+
+### 调用Block
+
+如果声明一个block作为变量，则可以像使用函数一样使用它，如以下两个示例所示：
+```
+int (^oneFrom)(int) = ^(int anInt) {
+    return anInt - 1;
+};
+
+printf("1 from 10 is %d", oneFrom(10));
+// Prints "1 from 10 is 9"
+
+float (^distanceTraveled)(float, float, float) = ^(float startingSpeed, float acceleration, float time) {
+
+    float distance = (startingSpeed * time) + (0.5 * acceleration * time * time);
+    
+    return distance;
+};
+
+float howFar = distanceTraveled(0.0, 9.8, 1.0);
+// howFar = 4.9
+```
+
+**但是我们在使用block时，经常将block作为参数传递给函数或方法。在这些情况下，我们通常会创建一个block“内联”。**
+
+### 使用Block作为函数参数
+
+可以像传递任何其他参数一样将block作为函数参数传递。然而，在许多情况下，我们不需要声明block。相反，我们只需要在它们被请求作为一个参数的地方内联地实现它们。以下示例使用`qsort_b`函数。`qsort_b`函数与标准的`qsort_r`函数类似，但将block作为其最终参数。
+```
+char *myCharacters[3] = { "TomJohn", "George", "Charles Condomine" };
+
+qsort_b(myCharacters, 3, sizeof(char *), ^(const void *l, const void *r) {
+
+    char *left = *(char **)l;
+    
+    char *right = *(char **)r;
+    
+    return strncmp(left, right, 1);
+});
+// Block implementation ends at "}"
+
+// myCharacters is now { "Charles Condomine", "George", "TomJohn" }
+```
+注意，该block包含在函数的参数列表中。
+
+下一个示例显示如何使用`dispatch_apply`函数的block。`dispatch_apply`的声明如下：
+```
+void dispatch_apply(size_t iterations, dispatch_queue_t queue, void (^block)(size_t));
+```
+该函数将一个block提交给调度队列以进行多个调用。它有3个参数：第一个参数指定要执行的迭代次数；第二个参数指定该block被提交到的队列；第三个参数是block本身，它又传递一个参数--迭代的当前索引。
+
+我们可以轻松使用`dispatch_apply`来打印出迭代索引，如下所示：
+```
+#include <dispatch/dispatch.h>
+size_t count = 10;
+dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+
+dispatch_apply(count, queue, ^(size_t i) {
+    printf("%u\n", i);
+});
+```
+
+### 使用Block作为方法参数
+
+Cocoa提供了许多使用block的方法。与其他任何参数一样，将一个block作为方法参数传递。
+
+以下示例确定出现在给定过滤器集合中的数组中前五个元素中的任何一个索引：
+```
+NSArray *array = @[@"A", @"B", @"C", @"A", @"B", @"Z", @"G", @"are", @"Q"];
+NSSet *filterSet = [NSSet setWithObjects: @"A", @"Z", @"Q", nil];
+
+BOOL (^test)(id obj, NSUInteger idx, BOOL *stop);
+
+test = ^(id obj, NSUInteger idx, BOOL *stop) {
+
+    if (idx < 5) {
+        if ([filterSet containsObject: obj]) {
+            return YES;
+        }
+    }
+    return NO;
+};
+
+NSIndexSet *indexes = [array indexesOfObjectsPassingTest:test];
+
+NSLog(@"indexes: %@", indexes);
+
+/*
+Output:
+indexes: <NSIndexSet: 0x10236f0>[number of indexes: 2 (in 2 ranges), indexes: (0 3)]
+*/
+```
 
