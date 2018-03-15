@@ -12,7 +12,7 @@ block是一个匿名内联代码集合：
 - 可以从其作用域中捕获状态；
 - 可以选择性修改作用域的状态；
 - 可以与同一作用域中定义的其他block共享修改潜力；
-- 能在作用域（堆栈帧）被销毁之后继续共享和修改在作用域（堆栈帧）内定义的状态；
+- 能在作用域（栈帧）被销毁之后继续共享和修改在作用域（栈帧）内定义的状态；
 - 可以复制一个block，甚至将其传递到其他线程以执行延迟执行（或者在其自己的线程中执行runloop）。编译器和runtime安排block的所有副本延长在block中引用的所有变量的生命周期。虽然block可用于纯C语言和C++语言，**但block总是一个Objective-C对象**。
 
 ### 用法
@@ -206,17 +206,17 @@ int (^getGlobalInt)(void) = ^{ return GlobalInt; };
 - 局部变量和作用域中的参数。
 
 block还支持两种其他类型的变量：
-- 在函数级别是`__block`变量。它们在block（和作用域）内是可变的，如果任何引用block被复制到**堆**中，它们将被保留。
-- `const`导入。
+1. 在函数级别是`__block`变量。它们在block（和作用域）内是可变的，如果任何引用的block被复制到**堆**中，它们将被保留。
+2. `const`导入。
 
 最后，在方法实现中，block可以引用Objective-C实例变量，参看[对象和Block变量](#jump)。
 
 在block内使用变量时请应用以下规则：
-- 全局变量是可访问的，包括存在于作用域的静态变量。
-- 传递给block的参数是可访问的（就像函数的参数一样）。
-- 作用域的堆（非静态）局部变量被捕获为`const`变量。它们的值取自程序中block表达式所在处。在block嵌套内，在该变量离block表达式最近的地方捕获该变量的值。在block内改变其值会导致错误。
-- 作用域中使用`__block`存储类型修饰符声明的局部变量由引用提供，因此是可变的。任何更改都会被反映在作用域中，包括在同一作用域中定义的任何其他block。更多详情参看[__block存储类型](#jump)。
-- 局部变量在block的作用域内声明，其行为与函数中的局部变量完全相同。每个block的调用都会提供该变量的新副本，这些变量可以在block的嵌套内作为`const`和by-reference变量使用。
+1. 全局变量是可访问的，包括存在于作用域的静态变量。
+2. 传递给block的参数是可访问的（就像函数的参数一样）。
+3. 作用域的栈区（非静态）局部变量被捕获为`const`变量。它们的值取自程序中block表达式所在处。在block嵌套内，在该变量离block表达式最近的地方捕获该变量的值。在block内改变其值会导致错误。
+4. 作用域中使用`__block`存储类型修饰符声明的局部变量由引用提供，因此是可变的。任何更改都会被反映在作用域中，包括在同一作用域中定义的任何其他block。更多详情参看[__block存储类型](#jump)。
+5. 局部变量在block的作用域内声明，其行为与函数中的局部变量完全相同。每个block的调用都会提供该变量的新副本，这些变量可以在block的嵌套内作为`const`和by-reference变量使用。
 
 以下示例说明了非静态局部变量的使用：
 ```
@@ -245,9 +245,9 @@ void (^printXAndY)(int) = ^(int y) {
 
 可以通过使用`__block`存储类型修饰符来指定导入的变量是可变的，即可读可写。`__block`存储与局部变量的寄存器、动态和静态存储类型相似，但是相互排斥。
 
-`__block`变量存储于变量的作用域与在变量的作用域内声明或创建的所有block和block副本共享的存储区域中。因此，如果在堆栈帧中声明的block的任何副本存活超出了堆栈帧的末尾（例如，通过在某处等待以后执行），那么此共享的存储区域将在堆栈帧的销毁中存活下来。给定作用域中的多个block可以同时使用共享变量。
+`__block`变量存储于变量的作用域与在变量的作用域内声明或创建的所有block和block副本共享的存储区域中。因此，如果在栈帧中声明的block的任何副本存活超出了栈帧的末尾（例如，通过在某处等待以后执行），那么此共享的存储区域将在栈帧的销毁中存活下来。给定作用域中的多个block可以同时使用共享变量。
 
-作为优化，block存储从堆栈开始--就像block自身一样。**如果使用Block_copy（或者在Objective-C中向block对象发送一个copy消息）复制block，那么变量将被复制到堆中**。因此，`__block`变量的地址会随着时间的推移而变化。
+作为优化，block存储从栈区开始--就像block自身一样。**如果使用Block_copy（或者在Objective-C中向block对象发送一个copy消息）复制block，那么变量将被复制到堆中**。因此，`__block`变量的地址会随着时间的推移而变化。
 
 `__block`变量还有两个限制：它们不能是可变长度的数组，也不能是包含C99可变长度数组的结构。
 
@@ -320,8 +320,8 @@ dispatch_async(queue, ^{
 #### C++对象
 
 一般而言，我们可以在block中使用C++对象。在一个成员函数中，对成员变量和函数的引用是通过隐式地导入它们的指针从而使它们可变。复制block时，有以下两点需要考虑：
-- 如果有一个基于堆栈的C++对象的`__block`存储类，那么就使用通常的copy构造函数。
-- 如果在block中使用任何基于堆栈的C++对象，则它必须具有const copy构造函数，然后使用该构造函数复制C++对象。
+- 如果有一个基于栈的C++对象的`__block`存储类，那么就使用通常的copy构造函数。
+- 如果在block中使用任何基于栈的C++对象，则它必须具有const copy构造函数，然后使用该构造函数复制C++对象。
 
 #### block
 
@@ -440,3 +440,54 @@ NSString *string = @"gamma";
 
 ### 复制Block
 
+通常，我们不需要对block执行`copy`（或者`retain`）操作。如果我们希望在声明block的作用域被销毁后仍然能使用该block，则仅需要对block执行一次copy操作。复制会将block移动到**堆区**。
+
+可以使用C函数来复制和释放block：
+```
+Block_copy();
+Block_release();
+```
+**为了避免内存泄漏，必须始终在调用`Block_copy()`函数之后，对应地调用一次`Block_release`函数。**
+
+### 使用时需要避免的模式
+
+block语法表达（既^{...}）是表示block的**栈区**局部数据结构的地址。因此，**栈区**局部数据结构的范围是包含block主体实现语句的，所以应避免以下示例中显示的模式：
+```
+void dontDoThis() {
+
+    void (^blockArray[3])(void);  // an array of 3 block references
+
+    for (int i = 0; i < 3; ++i)
+    {
+        blockArray[i] = ^{ printf("hello, %d\n", i); };
+        
+        // WRONG: The block literal scope is the "for" loop.
+    }
+}
+
+void dontDoThisEither() {
+
+    void (^block)(void);
+
+    int i = random():
+    
+    if (i > 1000)
+    {
+        block = ^{ printf("got i at: %d\n", i); };
+        
+        // WRONG: The block literal scope is the "then" clause.
+    }
+    // ...
+}
+```
+
+### 调试
+
+可以在block内设置断点和单一步骤。可以使用invoke-block从GDB会话中调用block，如下所示：
+```
+$ invoke-block myBlock 10 20
+```
+如果想传递一个C字符串，必须引用它。例如，要将此字符串传递到`doSomethingWithString`block，可以编写以下内容：
+```
+$ invoke-block doSomethingWithString "\"this string\""
+```
