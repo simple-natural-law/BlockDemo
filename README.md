@@ -447,7 +447,7 @@ NSString *string = @"gamma";
 Block_copy();
 Block_release();
 ```
-**为了避免内存泄漏，必须始终在调用`Block_copy()`函数之后，对应地调用一次`Block_release`函数。**
+**为了避免内存泄漏，必须在调用`Block_copy()`函数之后，对应地调用一次`Block_release`函数。**
 
 ### 使用时需要避免的模式
 
