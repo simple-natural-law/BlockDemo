@@ -420,4 +420,23 @@ Output:
 indexes: <NSIndexSet: 0x10236f0>[number of indexes: 2 (in 2 ranges), indexes: (0 3)]
 */
 ```
+以下示例确定`NSSet`对象是否包含由局部变量指定的单词，如果包含就将另一个局部变量（found）的值设为`YES`（并停止搜索）。注意found也被声明为`__block`变量，并且该block被内联定义：
+```
+__block BOOL found = NO;
+
+NSSet *aSet = [NSSet setWithObjects: @"Alpha", @"Beta", @"Gamma", @"X", nil];
+
+NSString *string = @"gamma";
+
+[aSet enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+    if ([obj localizedCaseInsensitiveCompare:string] == NSOrderedSame) {
+        *stop = YES;
+        found = YES;
+    }
+}];
+
+// At this point, found == YES
+```
+
+### 复制Block
 
