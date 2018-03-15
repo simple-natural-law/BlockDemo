@@ -243,10 +243,81 @@ void (^printXAndY)(int) = ^(int y) {
 
 ### __block存储类型修饰符
 
-可以通过应用`__block`存储类型修饰符来指定导入的变量是可变的，即可读可写。`__block`存储与局部变量的寄存器、自动和静态存储类型相似，但是相互排斥。
+可以通过使用`__block`存储类型修饰符来指定导入的变量是可变的，即可读可写。`__block`存储与局部变量的寄存器、动态和静态存储类型相似，但是相互排斥。
 
 `__block`变量存储于变量的作用域与在变量的作用域内声明或创建的所有block和block副本共享的存储区域中。因此，如果在堆栈帧中声明的block的任何副本存活超出了堆栈帧的末尾（例如，通过在某处等待以后执行），那么此共享的存储区域将在堆栈帧的销毁中存活下来。给定作用域中的多个block可以同时使用共享变量。
 
+作为优化，block存储从堆栈开始--就像block自身一样。**如果使用Block_copy（或者在Objective-C中向block对象发送一个copy消息）复制block，那么变量将被复制到堆中**。因此，`__block`变量的地址会随着时间的推移而变化。
+
+`__block`变量还有两个限制：它们不能是可变长度的数组，也不能是包含C99可变长度数组的结构。
+
+以下示例说明了`__block`变量的使用：
+```
+__block int x = 123; //  x lives in block storage
+
+void (^printXAndY)(int) = ^(int y) {
+
+    x = x + y;
+    printf("%d %d\n", x, y);
+};
+
+printXAndY(456); // prints: 579 456
+// x is now 579
+```
+以下示例显示了具有多种变量类型的block的交互：
+```
+extern NSInteger CounterGlobal;
+static NSInteger CounterStatic;
+
+{
+    NSInteger localCounter = 42;
+    __block char localCharacter;
+
+    void (^aBlock)(void) = ^(void) {
+        ++CounterGlobal;
+        ++CounterStatic;
+        CounterGlobal = localCounter; // localCounter fixed at block creation
+        localCharacter = 'a'; // sets localCharacter in enclosing scope
+        };
+
+    ++localCounter; // unseen by the block
+    localCharacter = 'b';
+
+    aBlock(); // execute the block
+    // localCharacter now 'a'
+}
+```
+
+### 对象和Block变量
+
+block支持Objective-C对象、C++对象和其他block作为变量。
+
+#### Objective-C对象
+
+block被复制时，其会创建对block内使用的对象变量的强引用。如果使用block时，在block方法的实现中：
+- 如果通过引用来访问实例变量，则会强引用`self`。
+- 如果根据值来访问实例变量，则会强引用该变量。
+
+以下示例说明了两种不同的情况：
+```
+dispatch_async(queue, ^{
+    // instanceVariable is used by reference, a strong reference is made to self
+    doSomethingWithObject(instanceVariable);
+});
+
+
+id localVariable = instanceVariable;
+dispatch_async(queue, ^{
+    /*
+    localVariable is used by value, a strong reference is made to localVariable
+    (and not to self).
+    */
+    doSomethingWithObject(localVariable);
+});
+```
+**要覆盖特定对象变量的这种行为，可以使用`__block`存储类型修饰符来标记它。**
+
+#### C++对象
 
 
 
