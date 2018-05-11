@@ -325,7 +325,7 @@ dispatch_async(queue, ^{
 
 #### block
 
-在复制block时，如果需要复制该block内其他block的引用，则可以复制整个树（从顶部开始）。如果有block变量，并且在该block内引用其他block，那么其他block将被复制。
+在复制block时，如果需要，该block对其他block的任何引用也会被复制（可以从顶部开始复制整个树）。如果存在block变量，并且在该block内引用其他block，那么这些block也将被复制。
 
 ## 使用Block
 
